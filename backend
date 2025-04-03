@@ -1,0 +1,15 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class PaymentRequest(BaseModel):
+    amount: float
+
+@app.post("/process-payment")
+def process_payment(request: PaymentRequest):
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+    
+    # Simulating payment processing logic
+    return {"message": f"Payment of ₹{request.amount} successful!"}
