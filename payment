@@ -1,0 +1,40 @@
+import React, { useState } from "react";
+import { Button, Card, Input } from "@/components/ui";
+
+const JuspayPayment = () => {
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState(null);
+
+  const handlePayment = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/process-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parseFloat(amount) }),
+      });
+      const result = await response.json();
+      setStatus(result.message);
+    } catch (error) {
+      setStatus("Payment failed. Please try again.");
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center h-screen">
+      <Card className="p-6 shadow-lg w-96 text-center">
+        <h2 className="text-xl font-bold mb-4">Juspay Payment Gateway</h2>
+        <Input
+          type="number"
+          placeholder="Enter amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="mb-4"
+        />
+        <Button onClick={handlePayment} className="w-full">Pay Now</Button>
+        {status && <p className="mt-4 text-lg font-semibold">{status}</p>}
+      </Card>
+    </div>
+  );
+};
+
+export default JuspayPayment;
