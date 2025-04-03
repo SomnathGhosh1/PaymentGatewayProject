@@ -1,0 +1,46 @@
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, Float, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+
+app = FastAPI()
+
+# Database setup
+DATABASE_URL = "sqlite:///./payments.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Payment Model
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Float, nullable=False)
+    status = Column(String, default="Success")
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+class PaymentRequest(BaseModel):
+    amount: float
+
+@app.post("/process-payment")
+def process_payment(request: PaymentRequest, db: Session = Depends(get_db)):
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+    
+    new_payment = Payment(amount=request.amount)
+    db.add(new_payment)
+    db.commit()
+    db.refresh(new_payment)
+    
+    return {"message": f"Payment of ₹{request.amount} successful!", "payment_id": new_payment.id}
